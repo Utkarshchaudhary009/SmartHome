@@ -1,0 +1,58 @@
+// Define pin numbers
+const int ldrPin = A0;       // LDR connected to analog pin A0
+const int ultrasonicTrigPin = 2;   // Ultrasonic sensor trigger pin
+const int ultrasonicEchoPin = 3;   // Ultrasonic sensor echo pin
+const int ledPin = 9;        // LED connected to digital pin 9
+const int servoPin = 10;     // Servo motor connected to digital pin 10
+
+// Define threshold values
+const int lightThreshold = 500;   // Adjust this value based on ambient light conditions
+const int proximityThreshold = 10; // Adjust this value based on desired proximity
+
+#include <Servo.h>
+
+Servo doorServo;
+
+void setup() {
+  pinMode(ultrasonicTrigPin, OUTPUT);
+  pinMode(ultrasonicEchoPin, INPUT);
+  pinMode(ldrPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+  doorServo.attach(servoPin);
+}
+
+void loop() {
+  int lightValue = analogRead(ldrPin);
+
+  if (lightValue < lightThreshold) {
+    digitalWrite(ledPin, HIGH); // Turn on light
+  } else {
+    digitalWrite(ledPin, LOW);  // Turn off light
+  }
+
+  int proximity = getProximity();
+  
+  if (proximity < proximityThreshold) {
+    openDoor();
+    delay(5000);  // Keep the door open for 5 seconds (adjust as needed)
+    closeDoor();
+  }
+}
+
+int getProximity() {
+  digitalWrite(ultrasonicTrigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(ultrasonicTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ultrasonicTrigPin, LOW);
+  
+  return pulseIn(ultrasonicEchoPin, HIGH) / 58; // Convert pulse duration to distance in cm
+}
+
+void openDoor() {
+  doorServo.write(90); // Open position (adjust as needed)
+}
+
+void closeDoor() {
+  doorServo.write(0); // Close position (adjust as needed)
+}
