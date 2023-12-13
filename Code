@@ -1,58 +1,99 @@
-// Define pin numbers
-const int ldrPin = A0;       // LDR connected to analog pin A0
-const int ultrasonicTrigPin = 2;   // Ultrasonic sensor trigger pin
-const int ultrasonicEchoPin = 3;   // Ultrasonic sensor echo pin
-const int ledPin = 9;        // LED connected to digital pin 9
-const int servoPin = 10;     // Servo motor connected to digital pin 10
-
-// Define threshold values
-const int lightThreshold = 500;   // Adjust this value based on ambient light conditions
-const int proximityThreshold = 10; // Adjust this value based on desired proximity
-
 #include <Servo.h>
+
+const int ldrPin = A0;         // LDR analog pin
+const int ldrDigitalPin = 4;   // LDR digital pin
+const int ledPin = 9;          // LED pin
+const int trigPin = 2;          // Ultrasonic sensor trigger pin
+const int echoPin = 3;          // Ultrasonic sensor echo pin
+const int buzzerPin = 8;       // Buzzer pin
+const int servoPin = 6;        // Servo motor pin
 
 Servo doorServo;
 
+const float distanceThreshold = 0.5;  // Distance threshold for door opening in meters
+const int buzzerDuration = 1000;      // Buzzer duration in milliseconds
+
+bool doorOpen = false;  // Variable to track whether the door is open
+
 void setup() {
-  pinMode(ultrasonicTrigPin, OUTPUT);
-  pinMode(ultrasonicEchoPin, INPUT);
-  pinMode(ldrPin, INPUT);
+  Serial.begin(9600);  // Initialize Serial Monitor
+  pinMode(ldrDigitalPin, INPUT);
   pinMode(ledPin, OUTPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
   doorServo.attach(servoPin);
 }
 
 void loop() {
-  int lightValue = analogRead(ldrPin);
+  int ldrValue = analogRead(ldrPin);
+  int ldrDigitalValue = digitalRead(ldrDigitalPin);
 
-  if (lightValue < lightThreshold) {
-    digitalWrite(ledPin, HIGH); // Turn on light
+  if (isPersonNear()) {
+    if (!doorOpen) {
+      openDoor();
+      delay(1000);  // Allow time for the door to open
+      digitalWrite(buzzerPin, HIGH);  // Activate buzzer
+      delay(buzzerDuration);
+      digitalWrite(buzzerPin, LOW);
+      doorOpen = true;  // Update the door status
+      Serial.println("Door opened");
+    }
   } else {
-    digitalWrite(ledPin, LOW);  // Turn off light
+    digitalWrite(buzzerPin, LOW);
+    if (doorOpen) {
+      closeDoor();
+      doorOpen = false;  // Update the door status
+      Serial.println("Door closed");
+    }
   }
 
-  int proximity = getProximity();
-  
-  if (proximity < proximityThreshold) {
-    openDoor();
-    delay(5000);  // Keep the door open for 5 seconds (adjust as needed)
-    closeDoor();
+  if (isDaytime(ldrValue)) {
+    digitalWrite(ledPin, HIGH);  // Turn on the light during daytime
+    Serial.println("Daytime");
+  } else {
+    digitalWrite(ledPin, LOW);   // Turn off the light during nighttime
+    Serial.println("Nighttime");
   }
+
+  delay(500);  // Delay for stability and to avoid excessive Serial output
 }
 
-int getProximity() {
-  digitalWrite(ultrasonicTrigPin, LOW);
+bool isDaytime(int ldrValue) {
+  return ldrValue > 500;  // You may need to adjust this threshold based on your environment
+}
+
+bool isPersonNear() {
+  digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
-  digitalWrite(ultrasonicTrigPin, HIGH);
+  digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
-  digitalWrite(ultrasonicTrigPin, LOW);
-  
-  return pulseIn(ultrasonicEchoPin, HIGH) / 58; // Convert pulse duration to distance in cm
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  float distance = (duration * 0.0343) / 2;  // Calculate distance in meters
+
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" meters");
+
+  return distance < distanceThreshold;
 }
 
 void openDoor() {
-  doorServo.write(90); // Open position (adjust as needed)
+  doorServo.write(90);  // Assuming 90 degrees is the open position, adjust as needed
+
+  // Buzzer pattern while opening the door
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(buzzerPin, HIGH);
+    delay(1000);  // Buzzer on for 1000 milliseconds
+    digitalWrite(buzzerPin, LOW);
+    delay(50);     // Buzzer off for 50 milliseconds
+  }
 }
 
 void closeDoor() {
-  doorServo.write(0); // Close position (adjust as needed)
+  doorServo.write(0);   // Assuming 0 degrees is the closed position, adjust as needed
+  delay(1000);          // Allow time for the door to close
 }
+
