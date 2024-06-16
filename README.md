@@ -1,6 +1,5 @@
 
-# Automated Light and Door Control System [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
+# Automated Light and Door Control System <a href="https://github.com/Utkarshchaudhary009/SmartHome/blob/main/Licence.md"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" Alt="MIT License"></a>
 
 ## Table of Contents
 
